@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# 가상환경
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+*.code-workspace
+.idea/
+
+# 로그, 데이터, 임시파일
+*.log
+*.sqlite3
+*.db
+*.csv
+*.tmp
+
+# 패키지 배포 파일
+*.egg-info/
+dist/
+build/
+
+# OS별 파일
+.DS_Store
+Thumbs.db
