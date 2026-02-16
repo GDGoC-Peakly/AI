@@ -30,3 +30,9 @@ build/
 # OS별 파일
 .DS_Store
 Thumbs.db
+
+# 실제 모델
+*.pkl
+__pycache__/
+venv/
+.env
