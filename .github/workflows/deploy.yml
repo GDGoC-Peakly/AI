@@ -35,4 +35,7 @@ jobs:
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-app:latest
             sudo docker stop fastapi-container || true
             sudo docker rm fastapi-container || true
-            sudo docker run -d --name fastapi-container -p 80:8000 ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-app:latest
+            sudo docker run -d --name fastapi-container \
+              -p 80:8000 \
+              -v /home/ubuntu/models:/app/models \
+              ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-app:latest
