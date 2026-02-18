@@ -67,5 +67,12 @@ async def predict_api(user_data: Dict):
     
     return {
         "user_id": user_data.get("user_id"),
-        "top_peak_times": [{"hour": h, "score": round(s, 2)} for h, s in top_3]
+        "top_peak_times": [
+            {
+                "hour": item['start_hour'], 
+                "duration": item['duration'], 
+                "score": round(item['score'], 2)
+            } 
+            for item in top_3
+        ]
     }
