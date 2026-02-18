@@ -11,6 +11,11 @@ MODEL_DIR = os.path.join(BASE_DIR, 'models')
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 
 def train(payload_data):
+    # [방어 로직 추가]
+    if len(payload_data) < 10:
+        print(f"학습 데이터 부족 (현재: {len(payload_data)}건). 최소 10건이 필요합니다.")
+        return None, None
+
     # models 폴더가 없으면 자동으로 생성
     if not os.path.exists(MODEL_DIR):
         os.makedirs(MODEL_DIR)
