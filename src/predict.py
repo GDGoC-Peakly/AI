@@ -57,7 +57,14 @@ def predict_with_blended_logic(model, model_columns, user_profile, recent_record
     if optimal_hours is None:
         optimal_hours = round(random.uniform(1.5, 2.5), 1) 
 
-
+    # 피로도에 따른 검토 세션 조정
+    if final_fatigue >= 4.0:
+        recommended_duration_range = [1.0, 1.5]  # 컨디션 안 좋을 땐 긴 시간은 아예 후보에서 제외
+    elif final_fatigue >= 3.5:
+        recommended_duration_range = [1.5, 2.0, 2.5]
+    else:
+        recommended_duration_range = [2.0, 2.5, 3.0] # 컨디션 좋으면 긴 시간도 검토
+    
     results = []
 
     for hour in simulation_hours:
@@ -73,35 +80,54 @@ def predict_with_blended_logic(model, model_columns, user_profile, recent_record
         else:
             bucket = '밤'
 
-        scenario = {
-            'sleep_feeling': final_sleep,
-            'fatigue_level': final_fatigue,
-            'sleep_fatigue_gap': final_gap,
-            'session_start_hour': hour,
-            'session_hours': 1.5,
-            'caffeine_level': 1,
-            'noise_level': 1,
-            f"chronotype_{user_profile['chronotype']}": 1,
-            f"caffeine_sensitivity_prior_{user_profile['caffeine_sensitivity_prior']}": 1,
-            f"noise_senserance_prior_{user_profile['noise_senserance_prior']}": 1,
-            f"session_time_bucket_{bucket}": 1
-        }
+        for duration in recommended_duration_range:
+            scenario = {
+                'sleep_feeling': final_sleep,
+                'fatigue_level': final_fatigue,
+                'sleep_fatigue_gap': final_gap,
+                'session_start_hour': hour,
+                'session_hours': duration,
+                'caffeine_level': 1,
+                'noise_level': 1,
+                f"chronotype_{user_profile['chronotype']}": 1,
+                f"caffeine_sensitivity_prior_{user_profile['caffeine_sensitivity_prior']}": 1,
+                f"noise_senserance_prior_{user_profile['noise_senserance_prior']}": 1,
+                f"session_time_bucket_{bucket}": 1
+            }
         
-        scenario_df = pd.DataFrame([scenario]).reindex(columns=model_columns, fill_value=0)
-        rating = model.predict(scenario_df)[0]
+            scenario_df = pd.DataFrame([scenario]).reindex(columns=model_columns, fill_value=0)
+            rating = model.predict(scenario_df)[0]
         
-        # -----------------------------
-        # 후처리: 세션 길이 보너스 적용
-        # -----------------------------
-        session_hours = 1.5
-        session_diff = abs(session_hours - optimal_hours)
-        session_bonus = max(0, 0.05 - session_diff * 0.2)
-        rating += session_bonus
-        rating = min(rating, 5.0)
-        results.append((hour, rating))
+            # -----------------------------
+            # 후처리: 세션 길이 보너스 적용
+            # -----------------------------
+            session_hours = duration
+            session_diff = abs(session_hours - optimal_hours)
+            session_bonus = max(0, 0.05 - session_diff * 0.2)
+            rating += session_bonus
+            rating = min(rating, 5.0)
+            results.append({
+                    'start_hour': hour,
+                    'duration': duration,
+                    'score': round(float(rating), 3)
+                })
+            
+    full_df = pd.DataFrame(results)
     
-    results.sort(key=lambda x: x[1], reverse=True)
-    return results[:3], final_sleep, final_fatigue
+    # 
+    # 같은 시작 시간(start_hour) 중에서 가장 score가 높은 행의 인덱스만 추출
+    idx_max = full_df.groupby("start_hour")["score"].idxmax()
+    final_candidates = full_df.loc[idx_max]
+
+    # 전체 후보 중 최종 점수 순으로 정렬하여 TOP 3 리턴
+    top3_results = (
+        final_candidates
+        .sort_values("score", ascending=False)
+        .head(3)
+        .to_dict('records')
+    )
+    
+    return top3_results, final_sleep, final_fatigue
 
 """
 # --- 테스트 실행 ---
@@ -120,6 +146,7 @@ best_times, s_val, f_val = predict_with_blended_logic(
     user_2day_avg_fatigue=4.0
 )
 
-print(f"추천 시간 1위: {best_times[0][0]}시 (점수: {best_times[0][1]:.2f})")
-
+# --- 테스트 실행 출력 부분 ---
+print(f"추천 1위: {best_times[0]['start_hour']}시 시작, {best_times[0]['duration']}시간 집중 (점수: {best_times[0]['score']:.2f})")
+print(f"추천 2위: {best_times[1]['start_hour']}시 시작, {best_times[1]['duration']}시간 집중 (점수: {best_times[1]['score']:.2f})")
 """
