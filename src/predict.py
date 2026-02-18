@@ -2,6 +2,7 @@ import pandas as pd
 import joblib
 import os
 import random
+import numpy as np
 
 
 # 현재 파일의 위치를 기준으로 모델 폴더 경로 설정
@@ -48,16 +49,16 @@ def predict_with_blended_logic(model, model_columns, user_profile, recent_record
     final_fatigue = get_weighted_user_avg(user_7day_avg_fatigue, user_2day_avg_fatigue, weight=0.3)
     final_gap = final_sleep - final_fatigue
     
-    results = []
-    simulation_hours = list(range(5, 24)) + list(range(0, 5))
-
+    simulation_hours = np.arange(0, 24, 0.5).tolist()
+    simulation_hours = [h for h in simulation_hours if h >= 5] + [h for h in simulation_hours if h < 5]
+            
     # optimal_hours 랜덤 생성
     optimal_hours = user_profile.get('optimal_hours')
     if optimal_hours is None:
         optimal_hours = round(random.uniform(1.5, 2.5), 1) 
-    
+
+
     results = []
-    simulation_hours = list(range(5, 24)) + list(range(0, 5))
 
     for hour in simulation_hours:
         

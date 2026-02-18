@@ -61,9 +61,10 @@ for persona_id, (chronotype, caffeine_sens, noise_sens) in enumerate(personas):
             for s in range(num_sessions):
                 session_id = str(uuid.uuid4())
                 
-                # session_start_hour 랜덤 0~23
-                session_start_hour = np.random.randint(0, 24)
-                
+                # session_start_hour 랜덤 30분 단위
+                hour_candidates = np.arange(0, 24, 0.5)
+                session_start_hour = float(np.random.choice(hour_candidates))
+
                 # session_time_bucket 결정
                 for bucket_name, start_hour, end_hour in time_buckets:
                     if start_hour < end_hour:
